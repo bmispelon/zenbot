@@ -1,16 +1,8 @@
-from cStringIO import StringIO
-from contextlib import closing
-import sys
+from subprocess import check_output
 
 def get_zen():
     """Capture the output of `import this` and return it."""
-    capture = StringIO()
-    sys.stdout = capture
-    sys.modules.pop('this', None)
-    import this
-    sys.stdout = sys.__stdout__
-    with closing(capture):
-        return capture.getvalue()[:-1] # remove the last newline
+    return check_output(['python', '-m', 'this'])[:-1] # remove the last newline
 
 ZEN = get_zen()
 ZENLIST = ZEN.split('\n')[2:] # Remove the first two lines (title and empty)
