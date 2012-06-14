@@ -1,0 +1,2 @@
+* pass comand to add/remove admins
+* pass command to join/leave a channel
