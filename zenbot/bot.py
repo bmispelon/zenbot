@@ -2,13 +2,13 @@ from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol
 from twisted.python import log
 
-import os
+import argparse
 import sys
 import re
 
-from zenbot.zen import ZENLIST, zen
+from zenbot.zen import zen
 
-
+DEFAULT_NICKNAME = "Mr_Aobg"
 _DIRMSG = re.compile(r'^\W*(\w.*)$')
 
 def extract_direct_message(nickname, msg):
@@ -18,12 +18,6 @@ def extract_direct_message(nickname, msg):
         return None
     else:
         return m.group(1)
-
-def set_split(s, sep=','):
-    """Split the given string, remove empty elements and turn into a set."""
-    if not s:
-        return set()
-    return set(x for x in s.split(sep) if x)
 
 
 class CommandsMixin(object):
@@ -125,14 +119,12 @@ class CommandsMixin(object):
 class Zenbot(CommandsMixin, irc.IRCClient):
     """An IRC bot that spews out passages of the python zen."""
 
-    nickname = "Mr_Aobg"
-    password = os.environ.get('ZENBOT_PASS')
-    ZEN_CMD = '!zen'
-
-    def __init__(self, *args, **kwargs):
-        self.channels = set_split(os.environ.get('ZENBOT_CHANNELS'))
-        self.admins = set_split(os.environ.get('ZENBOT_ADMINS'))
+    def __init__(self, channels=None, admins=None, nickname=None, password=''):
+        self.channels = set(channels or [])
+        self.admins = set(admins or [])
         self.muted = False
+        self.nickname = nickname or DEFAULT_NICKNAME
+        self.password = password
 
     def pubmsg(self, target, msg):
         """A wrapper around self.msg to cancel sending messages when the bot is muted."""
@@ -242,8 +234,9 @@ class Zenbot(CommandsMixin, irc.IRCClient):
         bot is present.
         
         """
-        if msg.startswith(self.ZEN_CMD):
-            search = msg[len(self.ZEN_CMD):].strip()
+        ZEN_CMD = '!zen'
+        if msg.startswith(ZEN_CMD):
+            search = msg[len(ZEN_CMD):].strip()
             z = zen(search)
             if z:
                 self.pubmsg(channel, z)
@@ -267,6 +260,20 @@ class ZenBotFactory(protocol.ClientFactory):
 
     # the class of the protocol to build when new connection is made
     protocol = Zenbot
+    
+    def __init__(self, channels=None, admins=None, nickname=DEFAULT_NICKNAME, password=''):
+        self.channels = channels
+        self.admins = admins
+        self.nickname = nickname
+        self.password = password
+
+    def buildProtocol(self, addr):
+        return self.protocol(
+            channels=self.channels,
+            admins=self.admins,
+            nickname=self.nickname,
+            password=self.password
+        )
 
     def clientConnectionLost(self, connector, reason):
         """If we get disconnected, reconnect to server."""
@@ -277,15 +284,38 @@ class ZenBotFactory(protocol.ClientFactory):
         reactor.stop()
 
 
+def get_parser():
+    parser = argparse.ArgumentParser(description="A zen IRC bot.")
+    parser.add_argument('-n', '--nickname', help='the nickname to use',
+        default=DEFAULT_NICKNAME)
+    parser.add_argument('-p', '--password', help='the NickServ password')
+    parser.add_argument('-c', '--channels',
+        help='the channels to connect to on startup', action='append')
+    parser.add_argument('-a', '--admins',
+        help='the users that can configure the bot while it\'s running',
+        action='append')
+    parser.add_argument('--host', help='the host to connect to',
+        default='chat.freenode.net')
+    parser.add_argument('--port', help='the port to connect to', default=6667)
+    
+    return parser
+
+
 if __name__ == '__main__':
     # initialize logging
     log.startLogging(sys.stdout)
+    
+    parser = get_parser()
+    config = vars(parser.parse_args())
+    
+    host = config.pop('host')
+    port = config.pop('port')
 
     # create factory protocol and application
-    f = ZenBotFactory()
+    f = ZenBotFactory(**config)
 
     # connect factory to this host and port
-    reactor.connectTCP("chat.freenode.net", 6667, f)
+    reactor.connectTCP(host, port, f)
 
     # run bot
     reactor.run()
