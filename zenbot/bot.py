@@ -3,10 +3,10 @@ from twisted.internet import reactor, protocol
 from twisted.python import log
 
 import os
-import re
 import sys
+import re
 
-from zen import ZENLIST, zen
+from zenbot.zen import ZENLIST, zen
 
 
 _DIRMSG = re.compile(r'^\W*(\w.*)$')
@@ -58,11 +58,11 @@ class CommandsMixin(object):
     def _do_helpcmd(self, user, cmd):
         """Show help for a particular command."""
         try:
-            fn = getattr(self, 'do_%s' % argstring)
+            fn = getattr(self, 'do_%s' % cmd)
         except AttributeError:
             msg = "No such command. Type !cmdlist to see available commands."
         else:
-            msg = '!%s: %s' % (argstring, fn.__doc__)
+            msg = '!%s: %s' % (cmd, fn.__doc__)
         self.msg(user, msg)
 
     def do_join(self, user, argstring):
@@ -151,7 +151,7 @@ class Zenbot(CommandsMixin, irc.IRCClient):
             self.msg('NickServ', 'identify %s' % (self.password))
         for channel in self.channels:
             self.join(channel)
-        for admin in self.ADMINS:
+        for admin in self.admins:
             self.add_admin(admin)
 
     def joined(self, channel):
@@ -207,7 +207,7 @@ class Zenbot(CommandsMixin, irc.IRCClient):
         If none is found, we send an error message.
         
         """
-        if user not in self_admins:
+        if user not in self.admins:
             self.msg(user, "I do not recognize your authority.")
             return
         command_fn = getattr(self, 'do_%s' % command, None)

@@ -1,17 +1,19 @@
 from random import choice as random_choice
 from subprocess import check_output
 
-__all__ = ['get_zen', 'ZEN', 'ZENLIST', 'ZENLIST_I', 'ZENSETS', 'ZENSETS_I', 'zen']
+__all__ = ['get_zen', 'ZEN', 'ZENLIST', 'ZENSETS', 'ZENLIST_I', 'ZENSETS_I', 'zen']
 
-def get_zen():
+def get_zen(python='python'):
     """Capture the output of `import this` and return it."""
-    return check_output(['python', '-m', 'this'])[:-1] # remove the last newline
+    return check_output([python, '-m', 'this'])[:-1] # remove the last newline
 
 ZEN = get_zen()
 ZENLIST = ZEN.split('\n')[2:] # Remove the first two lines (title and empty)
-ZENLIST_I = [l.lower() for l in ZENLIST]
 ZENSETS = [set(w for w in line.split() if w) for line in ZENLIST]
-ZENSETS_I = [set(w.lower() for w in s) for s in ZENSETS]
+
+# lower-case versions
+ZENLIST_I = [l.lower() for l in ZENLIST]
+ZENSETS_I = [set(w for w in line.split() if w) for line in ZENLIST_I]
 
 def zen(query='', choice=random_choice):
     """Find a sentence in the zen that correponds to a given string.
