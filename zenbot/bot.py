@@ -298,6 +298,8 @@ def get_parser():
         default='chat.freenode.net')
     parser.add_argument('--port', help='the port to connect to', type=int,
         default=6667)
+    parser.add_argument('--logfile',
+        help='the name of the file to log to (defaults to stdout)', default='')
     
     return parser
 
@@ -308,6 +310,13 @@ if __name__ == '__main__':
     
     host = config.pop('host')
     port = config.pop('port')
+    logfile = config.pop('logfile')
+    if logfile:
+        opened_logfile = True
+        logfile = open(logfile, 'w')
+    else:
+        logfile = sys.stdout
+        opened_logfile = False
 
     # initialize logging
     log.startLogging(logfile)
@@ -319,3 +328,6 @@ if __name__ == '__main__':
 
     # run bot
     reactor.run()
+    
+    if opened_logfile:
+        logfile.close()
