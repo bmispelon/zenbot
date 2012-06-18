@@ -296,7 +296,8 @@ def get_parser():
         action='append')
     parser.add_argument('--host', help='the host to connect to',
         default='chat.freenode.net')
-    parser.add_argument('--port', help='the port to connect to', default=6667)
+    parser.add_argument('--port', help='the port to connect to', type=int,
+        default=6667)
     
     return parser
 
