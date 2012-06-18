@@ -302,15 +302,14 @@ def get_parser():
 
 
 if __name__ == '__main__':
-    # initialize logging
-    log.startLogging(sys.stdout)
-    
     parser = get_parser()
     config = vars(parser.parse_args())
     
     host = config.pop('host')
     port = config.pop('port')
 
+    # initialize logging
+    log.startLogging(logfile)
     # create factory protocol and application
     f = ZenBotFactory(**config)
 
